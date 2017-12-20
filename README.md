@@ -5,12 +5,18 @@ This shows a POC for using TerminAttr on vEOS to stream data from vEOS SysDB to 
 All of this is done using Docker containers.
 
 Some sources:
-https://github.com/spotify/docker-kafka
-https://github.com/grahamneville/vrnetlab
-https://github.com/aristanetworks/goarista/tree/master/cmd/ockafka
-https://github.com/burnyd/eos-docker-HAproxy/blob/master/scripts/leaf1a.sh
-https://gist.github.com/abacaphiliac/f0553548f9c577214d16290c2e751071
+ - https://github.com/spotify/docker-kafka
+ - https://github.com/grahamneville/vrnetlab
+ - https://github.com/aristanetworks/goarista/tree/master/cmd/ockafka
+ - https://github.com/burnyd/eos-docker-HAproxy/blob/master/scripts/leaf1a.sh
+ - https://gist.github.com/abacaphiliac/f0553548f9c577214d16290c2e751071
 
+Next Steps for this README.
+ - These are rough notes - need to improve overall structure
+ - Look at logstash (https://github.com/aristanetworks/docker-logstash) see if it can export to OpenTSDB
+ - Look at running OpenTSDB in a container
+ - Look at running Grafana in a container and collecting from OpenTSDB
+ - Get some graphs going in Grafana
 
 
 First we need to start a Kafka container, for ease we are using a container built by Spotify that contains Kafka and Zookeeper in one image.
