@@ -25,7 +25,7 @@ First we need to start a Kafka container, for ease we are using a container buil
 Run container:
 ```
 docker pull spotify/kafka
-docker run -d -p 2181:2181 -p 9092:9092 --hostname kafka --env ADVERTISED_HOST=kafka --env ADVERTISED_PORT=9092 --name kafka spotify/kafka
+docker run -d -p 2181:2181 -p 9092:9092 --hostname kafka --env ADVERTISED_HOST=192.168.0.243 --env ADVERTISED_PORT=9092 --name kafka spotify/kafka
 ```
 
 Create Topic:
@@ -40,12 +40,12 @@ docker exec kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-topics.sh --list --zookeepe
 
 In a new SSH window - start a producer
 ```
-docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-console-producer.sh --broker-list kafka:9092 --topic test
+docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-console-producer.sh --broker-list 192.168.0.243:9092 --topic arista_test
 ```
 
 In a new SSH window - start a consumer
 ```
-docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
+docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server 192.168.0.243:9092 --topic test --from-beginning
 ```
 
 Now send messages on the producer window with each message ending in a carridge return, these should appear in the consumer window
@@ -96,7 +96,7 @@ Now pull down ockafka docker image and link to the kafka container from earlier.
 
 ```
 docker pull aristanetworks/ockafka
-docker run --link kafka aristanetworks/ockafka -addrs 192.168.0.24 -kafkaaddrs kafka:9092 -kafkatopic arista_test -subscribe /Sysdb/environment/
+docker run --link kafka aristanetworks/ockafka -addrs 192.168.0.24 -kafkaaddrs 192.168.0.243:9092 -kafkatopic arista_test -subscribe /Sysdb/
 ```
 
 Once all up and running on the consumer terminal window you should start to see messages coming through:
@@ -110,6 +110,108 @@ Once all up and running on the consumer terminal window you should start to see 
 {"dataset":"192.168.0.24","timestamp":1513806392935,"update":{"Sysdb":{"environment":{"temperature":{"config":{"name":"config"}}}}}}
 {"dataset":"192.168.0.24","timestamp":1513806392935,"update":{"Sysdb":{"environment":{"power":{"config":{"name":"config"}}}}}}
 ```
+
+
+
+Now on to ELK stack:
+
+```
+git clone https://github.com/deviantony/docker-elk.git
+cd docker-elk
+sudo docker-compose up
+```
+
+Test Elasticsearch 
+
+```
+curl localhost:9200
+```
+
+You should see the following output:
+
+```
+{
+ "name" : "W3NuLnv",
+ "cluster_name" : "docker-cluster",
+ "cluster_uuid" : "fauVIbHoSE2SlN_nDzxxdA",
+ "version" : {
+   "number" : "5.2.1",
+   "build_hash" : "db0d481",
+   "build_date" : "2017-02-09T22:05:32.386Z",
+   "build_snapshot" : false,
+   "lucene_version" : "6.4.1"
+ },
+ "tagline" : "You Know, for Search"
+}
+```
+
+Test Kibana:
+
+http://[serverIP]:5601
+
+
+Now edit the pipeline config file:
+
+```
+nano ./logstash/pipeline/logstash.conf
+```
+
+```
+input {
+  kafka {
+    bootstrap_servers => "192.168.0.243:9092"
+    topics => "arista_test"
+  }
+}
+
+filter {
+  date {
+    match => [ "timestamp", "UNIX_MS" ]
+    remove_field => [ "timestamp" ]
+  }
+  json {
+    source => "message"
+    remove_field => [ "message" ]
+  }
+  geoip {
+    source => "dataset"
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => "elasticsearch:9200"
+    index => "logstash-%{+YYYY.MM.dd}"
+  }
+}
+```
+
+
+Restart logstash:
+
+```
+docker restart dockerelk_logstash_1
+```
+
+
+Now if everything is okay and talking indices should appear when browsing to:
+
+http://192.168.0.243:9200/_cat/indices?v
+
+```
+health status index               uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   logstash-2017.12.21 ux0H7pRfTi2BxzQmiB5FwQ   5   1      51654            0        7mb            7mb
+```
+
+You should be able to point Kibana at the incidies:
+
+http://192.168.0.243:5601/app/kibana#/management/kibana/index?_g=()
+
+index pattern should match that of above - in this case "logstash-2017.12.21"
+
+
+
+
 
 
 
