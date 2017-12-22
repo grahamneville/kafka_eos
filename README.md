@@ -45,7 +45,7 @@ docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafk
 
 In a new SSH window - start a consumer
 ```
-docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server 192.168.0.243:9092 --topic test --from-beginning
+docker run -it --rm --link kafka spotify/kafka /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server 192.168.0.243:9092 --topic arista_test --from-beginning
 ```
 
 Now send messages on the producer window with each message ending in a carridge return, these should appear in the consumer window
